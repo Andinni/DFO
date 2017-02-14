@@ -1,0 +1,6 @@
+*.pyc
+test_data/
+client_prog.py
+DFO.cfg
+start_dict.py
+DFO_cb.py
