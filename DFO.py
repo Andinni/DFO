@@ -51,7 +51,7 @@ class MainWindow(QtGui.QWidget):
         
         self.setLayout(file_selector)       
         self.setGeometry(500, 400, 300, 150)
-        self.setWindowTitle('QtGui.QCheckBox')   
+        self.setWindowTitle('RP Analysis and File Navigator')   
         self.show()
         
         

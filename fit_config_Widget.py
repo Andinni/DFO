@@ -1,6 +1,21 @@
 import sys
 from PyQt4 import QtGui, QtCore
 import ConfigParser
+import RFmodels 
+import numpy as np
+from lmfit import Model
+
+
+def rem_builtins(module):
+    here = np.array(module)
+    mask = np.array(["__" not in x for x in here])
+    here = here[mask]
+    mask = np.array(["np" not in x for x in here])
+    here = here[mask]
+    mask = np.array(["Model" not in x for x in here])
+    here = here[mask]
+    return here
+
 
 class CfgWidget(QtGui.QWidget):
     def __init__(self):
@@ -10,6 +25,14 @@ class CfgWidget(QtGui.QWidget):
     def initUI(self):
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         fit_cfg_layout = QtGui.QGridLayout()
+        
+        function_list = rem_builtins(dir(RFmodels))
+        
+        self.model_selector = QtGui.QComboBox(self)
+        self.model_selector.addItems(function_list)
+
+        self.model_selector.currentIndexChanged.connect(self.find_models)
+                
         
         c_label = QtGui.QLabel('C',self)
         r_label = QtGui.QLabel('R',self)
@@ -32,6 +55,7 @@ class CfgWidget(QtGui.QWidget):
         ra_max_edt = QtGui.QLineEdit(self)
         ra_vary_chk = QtGui.QCheckBox(self)
         
+        fit_cfg_layout.addWidget(self.model_selector,0,0)
         fit_cfg_layout.addWidget(c_label, 1,0)
         fit_cfg_layout.addWidget(r_label, 2,0)
         fit_cfg_layout.addWidget(ra_label, 3,0)        
@@ -54,7 +78,15 @@ class CfgWidget(QtGui.QWidget):
         
         
         self.setLayout(fit_cfg_layout)
-        self.setGeometry(500, 400, 300, 150)
-        self.setWindowTitle('QtGui.QCheckBox')   
+        self.setGeometry(50, 50, 300, 600)
+        self.setWindowTitle('Configure Fit')   
         self.show()
+        
+    def find_models(self,i):
+        cur_mod = Model(getattr(RFmodels,self.model_selector.currentText()))
+        self.var_list = cur_mod.param_names
+        print self.var_list
+        return
+        
+        
         
