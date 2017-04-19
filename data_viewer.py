@@ -19,7 +19,7 @@ import numpy as np
 
 
 class PointBrowser(QtGui.QDialog):
-    def __init__(self, parent=None,filename=r'D:\tests\DFO-test_data\results.txt'):
+    def __init__(self, parent=None,filename=r'D:\Users\inhofer\Documents\shared_for_measurements\python\test\Code\L59W20\2017-04-13_15h30m38s_Vg2_0.00V\results + sigma.txt'):
         super(PointBrowser, self).__init__(parent)
         self.filename = filename
         self.figure = plt.figure()
@@ -32,13 +32,13 @@ class PointBrowser(QtGui.QDialog):
         self.res_ax = self.figure.add_subplot(211)
         self.spec_ax = self.figure.add_subplot(212)
         
-        self.data = np.genfromtxt(self.filename, dtype = None,names=True)
+        self.data = np.genfromtxt(self.filename, skip_header = 1, dtype = None, names=True, delimiter = '\t')
         self.selector_entries = [name for name in self.data.dtype.names]
-        self.spectra_files = self.data[self.selector_entries[0]]
+        self.spectra_files = self.data[self.selector_entries[-1]]
                
         self.selector = QtGui.QComboBox(self)
         
-        self.selector.addItems(self.selector_entries[1:])
+        self.selector.addItems(self.selector_entries[:-1])
         
         self.selector.currentIndexChanged.connect(self.upper_plot)
         
@@ -57,7 +57,7 @@ class PointBrowser(QtGui.QDialog):
         
         
     def upper_plot(self):
-        self.xs = np.array(self.data[self.selector_entries[1]])
+        self.xs = np.array(self.data['Vg'])
         selected_item = self.selector.currentText()
         self.ys = np.array(self.data[selected_item])
         
@@ -74,6 +74,7 @@ class PointBrowser(QtGui.QDialog):
             return True
 
         N = len(event.ind)
+        print event.ind
         if not N:
             return True
 
@@ -92,6 +93,7 @@ class PointBrowser(QtGui.QDialog):
         dataind = event.ind[indmin]
 
         self.lastind = dataind
+        
         self.update()
         self.figure.canvas.draw()
         
@@ -100,14 +102,29 @@ class PointBrowser(QtGui.QDialog):
         if self.lastind is None:
             return
         dataind = self.lastind
-        newX = np.genfromtxt(self.spectra_files[dataind]).T
-        self.spec_ax.hold(False)        
+        
+        spec_data = np.genfromtxt(self.spectra_files[dataind],delimiter = '\t', skip_header = 1).T
+        
+        self.spec_ax.hold(True)        
         self.spec_ax.clear()                
         self.spec_ax.cla()
-        spec_line, = self.spec_ax.plot(newX[0],newX[1],'ro')
-        spec_line.set_ydata = newX[1]
-        spec_line.set_xdata = newX[0]
+
+        exp_real_line, = self.spec_ax.plot(spec_data[0],spec_data[1],'ro')
+        exp_imag_line, = self.spec_ax.plot(spec_data[0],spec_data[2],'bo')
+        fit_real_line, = self.spec_ax.plot(spec_data[0],spec_data[3],'k--')
+        fit_imag_line, = self.spec_ax.plot(spec_data[0],spec_data[4],'k--')
         
+        exp_real_line.set_ydata = spec_data[1]
+        exp_real_line.set_xdata = spec_data[0]
+        exp_imag_line.set_ydata = spec_data[2]
+        exp_imag_line.set_xdata = spec_data[0]
+        fit_real_line.set_ydata = spec_data[3]
+        fit_real_line.set_xdata = spec_data[0]
+        fit_imag_line.set_ydata = spec_data[4]
+        fit_imag_line.set_xdata = spec_data[0]
+        
+        
+#        
         self.canvas.draw() # Needed for actual update of the figure.
 
 
@@ -124,7 +141,6 @@ def main():
 
 
 if __name__=='__main__':
-#    results_opener()
     main()
     
     
