@@ -8,8 +8,9 @@ from functools import partial
 from time import time,sleep
 from lmfit import Model
 from RFmodels import dist_rc_ra
-
+from PyQt4 import QtCore
 import sys
+
 
 def deembed_single_file(meas_f,thru,dummy):
     '''Deembed a single spectrum
@@ -46,6 +47,7 @@ class Analyser(object):
               
         
     def deembed_all_dut(self,files):
+        QtCore.QCoreApplication.processEvents()
         if self.par:
             N_CPU = multiprocessing.cpu_count()-1
             p = multiprocessing.Pool(N_CPU)
