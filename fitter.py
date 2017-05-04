@@ -3,7 +3,6 @@
 #==============================================================================
 from RFLPA.measurement import measurement
 import numpy as np
-from glob import glob
 import ConfigParser
 import multiprocessing
 from functools import partial
@@ -14,46 +13,38 @@ from PyQt4 import QtCore
 import sys
 
 
-def deembed_single_file(meas_f,thru,dummy):
-    '''Deembed a single spectrum
+def fit_single_meas(meas,model,freqs):
+    '''Fit a single spectrum
     
     Function must be external to Analyser class, 
     otherwise multiprocessing does not work...    
     '''
-    meas = measurement(meas_f)
-    de_thru = meas.deembed_thru(thru)
-    de_thru.create_y()
-    full_de = measurement(from_s=thru.y2s(de_thru.y-dummy.y),
-                          parent_meas = meas)
+    xs = freqs
+    ys = meas
+    model.fit()
+
     # Somewhere deep in multiprocessing only iterables can be pickled.
     # Standard workaround is to put result in a list.
-    return (full_de,) 
+    return (None, ) 
 
-class Analyser(object):
-    def __init__(self,dut_path,thru_file,dummy_file,parallelize = True):
-        self.par = parallelize
-        self.DuT_flist = glob(dut_path+'/*.txt')
-        self.thru = measurement(thru_file)
-        self.dummy_raw = measurement(dummy_file)
-        self.dummy = self.dummy_raw.deembed_thru(self.thru)
-        self.dummy.create_y()
-        self.dummy.plot_mat_spec(self.dummy.y)
+class Fitter(object):
+    def __init__(self, measurement_list, model, parameter='y',element = [0,1],parallelize = True):
+        self.parallel = parallelize
+        self.parameter = parameter
+        self.meas_list = measurement_list
+        self.define_fit()
+        self.fit_all_meas()
+                      
+    def define_fit(self):
+        self.data2fit = np.array([getattr(m,self.parameter) for m in self.meas_list])
+        self.freq = self.meas_list[0].freq
         
-        # Define single file de-embedding function with a single argument.
-        # ... again related to weird behavior of multiprocessing.
-        self.de_single = partial(deembed_single_file, 
-                                 thru = self.thru, 
-                                 dummy = self.dummy)
-                                 
-        self.all_de_meas = self.deembed_all_dut(self.DuT_flist)
-              
-        
-    def deembed_all_dut(self,files):
+    def fit_all_meas(self):
         QtCore.QCoreApplication.processEvents() # Avoids freezing? 
-        if self.par:
+        if self.parallel:
             N_CPU = multiprocessing.cpu_count()-1
             p = multiprocessing.Pool(N_CPU)
-            deembedded_meas = np.array(p.map(self.de_single, files))     
+            fit_meas = np.array(p.map(self.de_single, files))     
         else:
             deembedded_meas = []
             for f in files:
